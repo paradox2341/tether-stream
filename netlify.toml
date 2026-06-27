@@ -1,0 +1,13 @@
+# Netlify deployment config for the TetherStream frontend (Next.js static export).
+# The Next.js app lives in the frontend/ subdirectory and exports static HTML to
+# frontend/out (output: 'export' in next.config.mjs).
+
+[build]
+  base = "frontend"          # Netlify installs deps and runs the build here
+  command = "npm run build"  # next build → static export into ./out
+  publish = "out"            # deploy-ready files (relative to base = frontend/out)
+
+[build.environment]
+  # @stellar/stellar-sdk@16 requires Node >=22; Node 24 also ships npm 11, which
+  # matches the committed package-lock.json so `npm ci` stays in sync.
+  NODE_VERSION = "24"
