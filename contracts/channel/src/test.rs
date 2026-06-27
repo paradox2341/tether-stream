@@ -20,12 +20,12 @@ fn setup_test_env(
 
     // Deploy and initialise the TetherToken contract
     let authority = Address::generate(env);
-    let token_id = env.register_contract(None, TetherTokenContract);
+    let token_id = env.register(TetherTokenContract, ());
     let token_client = TetherTokenContractClient::new(env, &token_id);
     token_client.initialize(&authority);
 
     // Deploy the Channel contract
-    let channel_id = env.register_contract(None, ChannelContract);
+    let channel_id = env.register(ChannelContract, ());
     let channel_client = ChannelContractClient::new(env, &channel_id);
 
     let originator = Address::generate(env);
@@ -47,17 +47,11 @@ fn setup_test_env(
 #[test]
 fn test_allocate_asset_stream_locks_capital() {
     let env = Env::default();
-    let (originator, beneficiary, token_id, channel_client, token_client) =
-        setup_test_env(&env);
+    let (originator, beneficiary, token_id, channel_client, token_client) = setup_test_env(&env);
 
     env.ledger().set_timestamp(100);
-    let ch_id = channel_client.allocate_asset_stream(
-        &originator,
-        &beneficiary,
-        &token_id,
-        &100,
-        &10,
-    );
+    let ch_id =
+        channel_client.allocate_asset_stream(&originator, &beneficiary, &token_id, &100, &10);
 
     assert_eq!(ch_id, 1);
     assert_eq!(token_client.balance(&originator), 900);
@@ -102,8 +96,7 @@ fn test_compute_unlocked_capital_linear_vesting() {
 #[test]
 fn test_release_matured_capital_transfers_correct_amount() {
     let env = Env::default();
-    let (originator, beneficiary, token_id, channel_client, token_client) =
-        setup_test_env(&env);
+    let (originator, beneficiary, token_id, channel_client, token_client) = setup_test_env(&env);
 
     env.ledger().set_timestamp(100);
     channel_client.allocate_asset_stream(&originator, &beneficiary, &token_id, &100, &10);
@@ -174,8 +167,7 @@ fn test_allocate_asset_stream_rejects_zero_duration() {
 #[test]
 fn test_terminate_active_channel_splits_capital_correctly() {
     let env = Env::default();
-    let (originator, beneficiary, token_id, channel_client, token_client) =
-        setup_test_env(&env);
+    let (originator, beneficiary, token_id, channel_client, token_client) = setup_test_env(&env);
 
     env.ledger().set_timestamp(100);
     channel_client.allocate_asset_stream(&originator, &beneficiary, &token_id, &100, &10);
@@ -202,13 +194,7 @@ fn test_enumerate_channels_by_party_returns_correct_ids() {
     let other_beneficiary = Address::generate(&env);
 
     channel_client.allocate_asset_stream(&originator, &beneficiary, &token_id, &100, &10);
-    channel_client.allocate_asset_stream(
-        &originator,
-        &other_beneficiary,
-        &token_id,
-        &100,
-        &10,
-    );
+    channel_client.allocate_asset_stream(&originator, &other_beneficiary, &token_id, &100, &10);
 
     assert_eq!(
         channel_client.enumerate_channels_by_party(&originator),
@@ -228,8 +214,7 @@ fn test_enumerate_channels_by_party_returns_correct_ids() {
 #[test]
 fn test_partial_release_tracks_cumulative_capital_correctly() {
     let env = Env::default();
-    let (originator, beneficiary, token_id, channel_client, token_client) =
-        setup_test_env(&env);
+    let (originator, beneficiary, token_id, channel_client, token_client) = setup_test_env(&env);
 
     env.ledger().set_timestamp(100);
     channel_client.allocate_asset_stream(&originator, &beneficiary, &token_id, &100, &10);
@@ -247,8 +232,7 @@ fn test_partial_release_tracks_cumulative_capital_correctly() {
 #[test]
 fn test_terminate_after_partial_release_settles_remainder() {
     let env = Env::default();
-    let (originator, beneficiary, token_id, channel_client, token_client) =
-        setup_test_env(&env);
+    let (originator, beneficiary, token_id, channel_client, token_client) = setup_test_env(&env);
 
     env.ledger().set_timestamp(100);
     channel_client.allocate_asset_stream(&originator, &beneficiary, &token_id, &100, &10);

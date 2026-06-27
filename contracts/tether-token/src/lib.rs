@@ -1,7 +1,5 @@
 #![no_std]
-use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Env, String, Symbol,
-};
+use soroban_sdk::{contract, contractevent, contractimpl, contracttype, Address, Env, String};
 
 /// Storage key schema for the TetherToken contract.
 #[contracttype]
@@ -9,6 +7,26 @@ use soroban_sdk::{
 pub enum LedgerKey {
     Authority,
     Holding(Address),
+}
+
+/// Emitted whenever TTH moves between holdings. Topic: `transfer`.
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Transfer {
+    #[topic]
+    pub from: Address,
+    #[topic]
+    pub to: Address,
+    pub amount: i128,
+}
+
+/// Emitted whenever the authority mints new TTH. Topic: `tth_minted`.
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TthMinted {
+    #[topic]
+    pub recipient: Address,
+    pub amount: i128,
 }
 
 /// TetherToken (TTH) — the protocol-native token for TetherStream capital channels.
@@ -83,8 +101,7 @@ impl TetherTokenContract {
             .persistent()
             .set(&LedgerKey::Holding(to.clone()), &(to_holding + amount));
 
-        env.events()
-            .publish((symbol_short!("transfer"), from, to), amount);
+        Transfer { from, to, amount }.publish(&env);
     }
 
     /// Mints `amount` TTH to `recipient`. Only callable by the authority.
@@ -101,8 +118,7 @@ impl TetherTokenContract {
             .persistent()
             .set(&LedgerKey::Holding(recipient.clone()), &(current + amount));
 
-        env.events()
-            .publish((Symbol::new(&env, "tth_minted"), recipient), amount);
+        TthMinted { recipient, amount }.publish(&env);
     }
 }
 

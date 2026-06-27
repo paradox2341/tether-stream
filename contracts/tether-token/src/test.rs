@@ -17,10 +17,7 @@ fn test_tth_token_metadata_is_correct() {
     let env = Env::default();
     let (_, token_client) = setup_tether_token(&env);
 
-    assert_eq!(
-        token_client.name(),
-        String::from_str(&env, "Tether Token")
-    );
+    assert_eq!(token_client.name(), String::from_str(&env, "Tether Token"));
     assert_eq!(token_client.symbol(), String::from_str(&env, "TTH"));
     assert_eq!(token_client.decimals(), 7);
 }

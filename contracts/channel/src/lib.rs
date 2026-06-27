@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractevent, contractimpl, contracttype, Address, Env, Symbol, Vec};
 
 /// Represents an active capital channel (vesting stream) on-chain.
 #[contracttype]
@@ -12,6 +12,41 @@ pub struct Channel {
     pub channel_duration: u64,
     pub capital_released: i128,
     pub token: Address,
+}
+
+/// Emitted when an originator opens a new capital channel. Topic: `channel_allocated`.
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ChannelAllocated {
+    #[topic]
+    pub channel_id: u64,
+    #[topic]
+    pub originator: Address,
+    #[topic]
+    pub beneficiary: Address,
+    pub locked_capital: i128,
+}
+
+/// Emitted when a beneficiary claims vested capital. Topic: `capital_released`.
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CapitalReleased {
+    #[topic]
+    pub channel_id: u64,
+    #[topic]
+    pub beneficiary: Address,
+    pub claimed: i128,
+}
+
+/// Emitted when an originator terminates a channel early. Topic: `channel_terminated`.
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ChannelTerminated {
+    #[topic]
+    pub channel_id: u64,
+    #[topic]
+    pub originator: Address,
+    pub returned_to_originator: i128,
 }
 
 #[contract]
@@ -97,18 +132,16 @@ impl ChannelContract {
         // Transfers locked_capital from originator into this contract's custody
         // via soroban_sdk::token::Client (Soroban-to-Soroban invocation).
         let token_client = soroban_sdk::token::Client::new(&env, &token);
-        token_client.transfer(&originator, &env.current_contract_address(), &locked_capital);
+        token_client.transfer(&originator, env.current_contract_address(), &locked_capital);
         // ────────────────────────────────────────────────────────────────────────
 
-        env.events().publish(
-            (
-                Symbol::new(&env, "channel_allocated"),
-                seq,
-                originator,
-                beneficiary,
-            ),
+        ChannelAllocated {
+            channel_id: seq,
+            originator,
+            beneficiary,
             locked_capital,
-        );
+        }
+        .publish(&env);
 
         seq
     }
@@ -172,14 +205,12 @@ impl ChannelContract {
         );
         // ────────────────────────────────────────────────────────────────────────
 
-        env.events().publish(
-            (
-                Symbol::new(&env, "capital_released"),
-                channel_id,
-                channel.beneficiary.clone(),
-            ),
-            claimable,
-        );
+        CapitalReleased {
+            channel_id,
+            beneficiary: channel.beneficiary.clone(),
+            claimed: claimable,
+        }
+        .publish(&env);
 
         claimable
     }
@@ -227,14 +258,12 @@ impl ChannelContract {
         sealed.capital_released = unlocked;
         env.storage().persistent().set(&channel_id, &sealed);
 
-        env.events().publish(
-            (
-                Symbol::new(&env, "channel_terminated"),
-                channel_id,
-                channel.originator.clone(),
-            ),
-            to_originator,
-        );
+        ChannelTerminated {
+            channel_id,
+            originator: channel.originator.clone(),
+            returned_to_originator: to_originator,
+        }
+        .publish(&env);
     }
 
     /// Returns all channel IDs associated with a given address (as originator or beneficiary).
