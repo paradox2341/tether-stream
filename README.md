@@ -261,7 +261,7 @@ All errors surface as colour-coded protocol notices (error/warning/info/success)
 
 ### Prerequisites
 
-- Rust + `wasm32-unknown-unknown` target
+- Rust + `wasm32v1-none` target
 - Node.js 20+
 - Stellar CLI (`stellar`)
 - Freighter wallet browser extension

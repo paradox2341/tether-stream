@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   rpc,
+  xdr,
   Address,
   scValToNative,
   nativeToScVal,
@@ -318,6 +319,38 @@ export async function enumerateChannelsForParty(
 
 // ── Channel Write Operations ─────────────────────────────────────────────────
 
+/**
+ * Rewrites every Soroban authorization entry on an invoke-host-function
+ * transaction to use *source-account* credentials.
+ *
+ * For every write in this dApp the address that must `require_auth()` (the
+ * channel originator / beneficiary) is also the transaction source. Simulation,
+ * however, returns `Address` credentials, which require a separate per-entry
+ * signature that browser wallets (Freighter via StellarWalletsKit) do not add
+ * when they sign only the transaction envelope — causing the nested
+ * `token.transfer` to trap with `require_auth` failure. Converting the entries
+ * to source-account credentials means the single envelope signature authorizes
+ * the whole invocation tree, including the inter-contract transfer.
+ */
+function authorizeWithSourceAccount(preparedXdr: string): string {
+  const env = xdr.TransactionEnvelope.fromXDR(preparedXdr, 'base64');
+  const tx = env.v1().tx();
+  for (const op of tx.operations()) {
+    if (op.body().switch().name === 'invokeHostFunction') {
+      const ihf = op.body().invokeHostFunctionOp();
+      const rewritten = ihf.auth().map(
+        (entry) =>
+          new xdr.SorobanAuthorizationEntry({
+            credentials: xdr.SorobanCredentials.sorobanCredentialsSourceAccount(),
+            rootInvocation: entry.rootInvocation(),
+          })
+      );
+      ihf.auth(rewritten);
+    }
+  }
+  return env.toXDR('base64');
+}
+
 /** Prepares, signs, submits, and polls a write transaction. Returns tx hash on success. */
 async function executeSignedTransaction(
   userAddress: string,
@@ -330,7 +363,7 @@ async function executeSignedTransaction(
   const sourceAccount = await server.getAccount(userAddress);
   let tx = new TransactionBuilder(sourceAccount, {
     networkPassphrase,
-    fee: '100',
+    fee: '1000000',
   })
     .addOperation(operation)
     .setTimeout(60)
@@ -338,8 +371,11 @@ async function executeSignedTransaction(
 
   tx = await server.prepareTransaction(tx);
 
+  // Authorize the nested inter-contract calls via the envelope signature.
+  const xdrToSign = authorizeWithSourceAccount(tx.toXDR());
+
   const { signedTxXdr } = await mod.StellarWalletsKit.signTransaction(
-    tx.toXDR(),
+    xdrToSign,
     { networkPassphrase, address: userAddress }
   );
 
@@ -361,18 +397,52 @@ async function executeSignedTransaction(
   return pollTransactionStatus(submitResult.hash);
 }
 
-/** Polls the RPC until a transaction reaches SUCCESS or FAILED status. */
+/** Confirms a transaction's final status via Horizon (JSON, no XDR decoding). */
+async function confirmViaHorizon(txHash: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(
+      `https://horizon-testnet.stellar.org/transactions/${txHash}`
+    );
+    if (res.status === 404) return null; // not yet included
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Boolean(data.successful);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Polls until a transaction reaches a final status. The submit call already
+ * accepted the transaction into the network, so RPC XDR-decode hiccups (e.g.
+ * protocol-version meta skew) must not surface as a user-facing failure — we
+ * fall back to Horizon's JSON status to confirm success without decoding XDR.
+ */
 async function pollTransactionStatus(txHash: string): Promise<string> {
-  let status: string = 'PENDING';
-  while (status === 'PENDING') {
+  const maxAttempts = 20;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    const txStatus = await server.getTransaction(txHash);
-    status = txStatus.status;
-    if (status === 'SUCCESS') return txHash;
-    if (status === 'FAILED') {
-      throw new Error('Transaction execution failed on-chain');
+    try {
+      const txStatus = await server.getTransaction(txHash);
+      if (txStatus.status === 'SUCCESS') return txHash;
+      if (txStatus.status === 'FAILED') {
+        throw new Error('Transaction execution failed on-chain');
+      }
+      // status === 'NOT_FOUND' / 'PENDING' → keep polling
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('failed on-chain')) {
+        throw err;
+      }
+      // RPC response could not be decoded — confirm via Horizon instead.
+      const ok = await confirmViaHorizon(txHash);
+      if (ok === true) return txHash;
+      if (ok === false) throw new Error('Transaction execution failed on-chain');
+      // ok === null → not yet included, keep polling
     }
   }
+  // Timed out waiting on RPC; do a final authoritative check via Horizon.
+  const finalOk = await confirmViaHorizon(txHash);
+  if (finalOk === false) throw new Error('Transaction execution failed on-chain');
   return txHash;
 }
 
