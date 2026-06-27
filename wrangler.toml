@@ -2,7 +2,9 @@ name = "tether-stream"
 compatibility_date = "2026-06-27"
 
 [build]
-command = "npx --yes npm@10.9.2 ci && npm run build"
+# Node 24 (set via .node-version) ships npm 11, which matches the committed
+# package-lock.json and satisfies @stellar/stellar-sdk@16's Node >=22 requirement.
+command = "npm ci && npm run build"
 cwd = "frontend"
 
 [assets]
