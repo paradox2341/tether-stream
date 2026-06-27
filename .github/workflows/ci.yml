@@ -19,12 +19,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
+
+      # @stellar/stellar-sdk@16 requires Node >=22; the lockfile is generated
+      # with npm 11, so pin npm 11 on CI to keep `npm ci` deterministic.
+      - name: Pin npm 11
+        run: npm install -g npm@11
 
       - name: Install dependencies
         run: npm ci
@@ -34,6 +39,9 @@ jobs:
 
       - name: Run TypeScript type-check
         run: npm run typecheck
+
+      - name: Run frontend unit tests
+        run: npm test
 
   # ── Contracts: Format, Build & Test ──────────────────────────────────────
   contracts:

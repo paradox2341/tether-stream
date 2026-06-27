@@ -9,6 +9,7 @@ import {
   ShieldOff,
 } from 'lucide-react';
 import { ChannelRecord } from '../../core/chain-adapter/stellar';
+import { computeUnlocked, vestProgressPct } from '../../core/vesting';
 
 interface ChannelPanelProps {
   channel: ChannelRecord;
@@ -39,17 +40,17 @@ export const ChannelPanel: React.FC<ChannelPanelProps> = ({
   useEffect(() => {
     const tick = () => {
       const nowSec = Math.floor(Date.now() / 1000);
-      const elapsed = Math.max(0, nowSec - channel.epochStart);
-
-      let unlocked = 0;
-      if (elapsed >= channel.channelDuration) {
-        unlocked = channel.lockedCapital;
-      } else {
-        unlocked = (channel.lockedCapital * elapsed) / channel.channelDuration;
-      }
-
-      setLiveUnlocked(unlocked);
-      setVestProgress(Math.min(100, (elapsed / channel.channelDuration) * 100));
+      setLiveUnlocked(
+        computeUnlocked(
+          channel.lockedCapital,
+          channel.epochStart,
+          channel.channelDuration,
+          nowSec
+        )
+      );
+      setVestProgress(
+        vestProgressPct(channel.epochStart, channel.channelDuration, nowSec)
+      );
     };
 
     tick();
