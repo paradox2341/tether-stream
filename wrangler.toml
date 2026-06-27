@@ -1,0 +1,9 @@
+name = "tether-stream"
+compatibility_date = "2026-06-27"
+
+[build]
+command = "npx --yes npm@10.9.2 ci && npm run build"
+cwd = "frontend"
+
+[assets]
+directory = "./frontend/out"
