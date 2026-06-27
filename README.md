@@ -11,9 +11,9 @@
 
 **Real-time capital streaming on Stellar — powered by Soroban smart contracts with live inter-contract calls.**
 
-🌐 **Live Demo:** [https://tether-stream.workers.dev/](https://tether-stream.workers.dev/) *(Placeholder)*
+🌐 **Live Demo:** _Deploying to Cloudflare Workers — link to be added._
 
-🎥 **Demo Video (1–2 min):** [https://github.com/paradox2341/tether-stream/blob/main/screenshots/demo.gif](https://github.com/paradox2341/tether-stream/blob/main/screenshots/demo.gif)
+🎥 **Demo Video (1–2 min):** _To be added._ &nbsp;·&nbsp; A short screen recording of the live capital ticker is included at [`screenshots/demo.gif`](./screenshots/demo.gif).
 
 </div>
 
@@ -32,7 +32,7 @@
 - [Screenshots](#-screenshots)
 - [Setup Instructions](#-setup-instructions)
 - [Testing](#-testing)
-- [Commit History Summary](#-commit-history-summary)
+- [Commit History](#-commit-history)
 - [License](#-license)
 
 ---
@@ -277,7 +277,7 @@ rustup target add wasm32v1-none
 ### 2. Clone & Install Frontend Dependencies
 
 ```bash
-git clone https://github.com/OWNER/tether-stream
+git clone https://github.com/paradox2341/tether-stream
 cd tether-stream/frontend
 npm ci   # uses the committed package-lock.json
 ```
@@ -414,24 +414,47 @@ test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 | `test_transfer_panics_on_insufficient_balance` | Panics with correct message |
 | `test_mint_panics_on_zero_amount` | Panics on 0 mint |
 
+### Frontend Tests
+
+The frontend's vesting math (`src/core/vesting.ts`) — the logic that drives the
+live capital ticker and must agree with the on-chain `compute_unlocked_capital` —
+is covered by a [Vitest](https://vitest.dev) suite (`src/core/vesting.test.ts`):
+
+```bash
+cd frontend
+npm test          # vitest run — 12 tests
+```
+
+```
+ ✓ src/core/vesting.test.ts (12 tests)
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+```
+
+These assert linear unlocking at 0% / 50% / 100% / past-duration, claimable =
+unlocked − released (never negative), and divide-by-zero safety — matching the
+contract's behaviour exactly. Both the contract tests and the frontend tests run
+on every push via the CI pipeline.
+
 ---
 
-## 📝 Commit History Summary
+## 📝 Commit History
 
-| # | Commit | Description |
-|---|--------|-------------|
-| 1 | `chore: project scaffold and tether-stream architectural layout routing` | Directory structure, Cargo workspace, Next.js config |
-| 2 | `feat: implement channel contract with renamed soroban methods` | ChannelContract with all 6 methods and inter-contract calls |
-| 3 | `feat: implement tether-token contract (TTH symbol)` | TetherTokenContract with renamed storage keys |
-| 4 | `test: compile channel and tether-token test suites (11 + 5 tests)` | Full test coverage |
-| 5 | `feat: integrate wallet authorization workflows via StellarWalletsKit` | chain-adapter/stellar.ts with all renamed functions |
-| 6 | `feat: implement cyberpunk dark design system and Tailwind tokens` | Custom color tokens, JetBrains Mono, glow shadows |
-| 7 | `feat: build NodeIdentifier and ChannelInitiator protocol UI modules` | Header + form components |
-| 8 | `feat: implement ChannelPanel live capital ticker and ChannelBoard` | 100ms ticker, tab-filtered grid |
-| 9 | `feat: build EventLedger and main page orchestrator` | Event log + full page assembly |
-| 10 | `feat: configure robust error boundaries and loading fallback states` | 3 error classes, loading indicators |
-| 11 | `ci: establish automated continuous integration workflows` | GitHub Actions: lint, typecheck, cargo test |
-| 12 | `docs: populate canonical README matching verification guidelines` | This README |
+The project was built incrementally in small, well-labelled commits (well above the
+10-commit minimum). The work breaks down into these phases — see the full
+[`git log`](https://github.com/paradox2341/tether-stream/commits/main) for the
+complete history:
+
+- **Scaffold** — Cargo workspace, Next.js app, project layout
+- **Contracts** — `channel` (custody, linear vesting, inter-contract transfers) and
+  `tether-token` (TTH) with their unit-test suites
+- **Chain adapter** — `stellar.ts`: wallet connect/sign, contract reads/writes,
+  source-account authorization for inter-contract calls
+- **UI** — design system, header, channel form, live capital ticker, channel board,
+  event ledger, error/loading states
+- **CI/CD** — GitHub Actions pipeline (contracts + frontend)
+- **Testnet & docs** — real deployment, on-chain evidence, and this README
 
 ---
 
