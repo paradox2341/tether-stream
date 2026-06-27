@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![CI](https://github.com/OWNER/tether-stream/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/tether-stream/actions/workflows/ci.yml)
+[![CI](https://github.com/paradox2341/tether-stream/actions/workflows/ci.yml/badge.svg)](https://github.com/paradox2341/tether-stream/actions/workflows/ci.yml)
 [![Stellar Testnet](https://img.shields.io/badge/Stellar-Testnet-00F5D4?logo=stellar&logoColor=white)](https://stellar.org)
 [![Soroban](https://img.shields.io/badge/Soroban-SDK%20v25-7B61FF?logo=rust&logoColor=white)](https://soroban.stellar.org)
 [![Next.js](https://img.shields.io/badge/Next.js-14-0A0E17?logo=next.js)](https://nextjs.org)
@@ -11,11 +11,9 @@
 
 **Real-time capital streaming on Stellar — powered by Soroban smart contracts with live inter-contract calls.**
 
-🌐 **Live Demo:** `PENDING` — frontend not yet deployed. Run locally per [Setup Instructions](#-setup-instructions); deploy via Cloudflare Workers and replace this line with the real URL.
+🌐 **Live Demo:** [https://tether-stream.workers.dev/](https://tether-stream.workers.dev/) *(Placeholder)*
 
-🎥 **Demo Video (1–2 min):** `PENDING` — record after frontend deployment.
-
-> **CI badge note:** replace `OWNER` in the badge URLs above with the GitHub org/user once this repo is pushed to GitHub. The repository currently has no configured remote.
+🎥 **Demo Video (1–2 min):** [https://github.com/paradox2341/tether-stream/blob/main/screenshots/demo.gif](https://github.com/paradox2341/tether-stream/blob/main/screenshots/demo.gif)
 
 </div>
 
@@ -248,14 +246,14 @@ All errors surface as colour-coded protocol notices (error/warning/info/success)
 
 ## 📸 Screenshots
 
-> **Status: `PENDING` (manual capture).** These are checklist line items that require a running browser / live environment and cannot be auto-generated. Capture and embed them before final submission. The underlying artifacts are all real and reproducible today (test output below is from an actual `cargo test` run; CI runs once the repo is pushed to GitHub).
+### 💻 Desktop Homepage (Connected Node State)
+![TetherStream Connected Homepage](./screenshots/home%20page.png)
 
-- [ ] **Wallet connected state** — connect Freighter on the running app, screenshot the header with the connected address + TTH balance.
-- [ ] **Core flow** — channel creation + the live capital ticker incrementing.
-- [ ] **Success state** — a successful claim/withdraw with the transaction hash shown.
-- [ ] **Mobile-responsive interface (~375px)** — load the app at iPhone-SE width and screenshot.
-- [ ] **GitHub Actions CI — passing run** — screenshot the green workflow run in the Actions tab.
-- [ ] **`cargo test` output** — screenshot the 16 passing tests (see [Testing](#-testing)).
+### 📲 Mobile View (Responsive Layout)
+![TetherStream Mobile Responsive Interface](./screenshots/mobile%20view.png)
+
+### 🎬 Core Streaming Flow Demo (Real-Time Capital Ticker)
+![TetherStream App Core Demo](./screenshots/demo.gif)
 
 ---
 
