@@ -11,7 +11,7 @@
 
 **Real-time capital streaming on Stellar — powered by Soroban smart contracts with live inter-contract calls.**
 
-🌐 **Live Demo:** _Deploying to Cloudflare Workers — link to be added._
+🌐 **Live Demo:** **[tether-stream.quake-hamlet-radar.workers.dev](https://tether-stream.quake-hamlet-radar.workers.dev/)** _(Stellar Testnet · Cloudflare Workers)_
 
 🎥 **Demo Video (1–2 min):** _To be added._ &nbsp;·&nbsp; A short screen recording of the live capital ticker is included at [`screenshots/demo.gif`](./screenshots/demo.gif).
 
